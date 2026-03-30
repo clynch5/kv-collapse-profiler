@@ -1,6 +1,10 @@
 # kv-collapse-profiler
 
+**By [Christopher Lynch](https://github.com/clynch5) | [Intuitive Context LLC](https://intuitivecontext.com)** — AI consulting & applied ML research
+
 Identify attention heads with geometrically collapsed key representations in any HuggingFace transformer model.
+
+> **Full writeup:** [KV Collapse: Applied Research](https://intuitivecontext.com/blog/kv-collapse-applied-research)
 
 ## Quick Start
 
@@ -112,17 +116,6 @@ Use with [turboquant_plus](https://github.com/nickthecook/turboquant_plus) for a
 2. **Compress uniformly** -- Apply TurboQuant (Hadamard rotation + uniform quantization) to all heads.
 3. **Drop collapsed heads further** -- Heads scoring >= 0.90 can go to 1-2 bits without the rotation step, saving both memory and compute.
 
-## Full Writeup
-
-Detailed analysis, methodology, and extended results: [intuitivecontext.com/blog/kv-collapse-applied-research](https://intuitivecontext.com/blog/kv-collapse-applied-research)
-
 ## License
 
 MIT
-
-## Author
-
-**Christopher Lynch**
-Intuitive Context LLC
-[intuitivecontext.com](https://intuitivecontext.com)
-[github.com/clynch5](https://github.com/clynch5)
