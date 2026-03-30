@@ -3,10 +3,11 @@
 kv_collapse_profiler.py
 =======================
 Identifies attention heads with geometrically collapsed key representations
-in any HuggingFace transformer model.
+in decoder-only HuggingFace transformer models (Llama, Qwen, Mistral, SmolLM, etc.).
 
-Runs in a single forward pass. No GPU required. No training data. No calibration.
-Takes ~4 minutes on an M5 MacBook Pro for a 1.5B parameter model.
+Runs two lightweight forward passes over fixed diverse text. No GPU required.
+No user-supplied training data. Takes ~4 minutes on an M5 MacBook Pro for a
+1.5B parameter model.
 
 Usage:
     python kv_collapse_profiler.py --model Qwen/Qwen2.5-1.5B-Instruct
@@ -21,8 +22,9 @@ Output:
 What "collapse" means:
     A collapsed head is one where the vast majority of key vectors are geometric
     near-duplicates of previously-seen vectors, regardless of input content.
-    These heads can be compressed to a single centroid + residual with no
-    measurable quality loss (Phase 3B result: 0.007 perplexity delta at 2x compression).
+    These heads are candidates for aggressive compression. Phase 3B result on
+    Qwen2.5-1.5B L15-H1: ±0.007 perplexity delta at 2x compression. Measurement
+    is pre-RoPE (hooks k_proj), acting as a proxy for cached key redundancy.
 
 Prior art context:
     - DuoAttention (MIT, ICLR 2025): identifies head specialization via 2000 optimization
@@ -221,9 +223,9 @@ def run_forward(model, tokenizer, text: str, device: str, n_layers: int,
 
 # ── Recommendation engine ─────────────────────────────────────────────────────
 
-COLLAPSE_STRONG = 0.60   # >60%: extreme collapse — 1-bit index safe
-COLLAPSE_MOD    = 0.25   # 25-60%: moderate collapse — aggressive quantization safe
-COLLAPSE_MILD   = 0.10   # 10-25%: mild signal — standard quantization fine
+COLLAPSE_STRONG = 0.60   # >60%: extreme collapse — 1-2 bit candidate (tested on Qwen2.5 L15-H1)
+COLLAPSE_MOD    = 0.25   # 25-60%: moderate collapse — aggressive quantization candidate
+COLLAPSE_MILD   = 0.10   # 10-25%: mild signal — standard quantization
 
 
 def classify_head(frac: float) -> str:
@@ -379,7 +381,7 @@ def profile_model(
     print(f"  {'─'*56}")
 
     if extreme:
-        print(f"\n  {len(extreme)} EXTREME heads — safe to assign 1-2 bit KV cache:")
+        print(f"\n  {len(extreme)} EXTREME heads — candidates for 1-2 bit KV cache:")
         for e in extreme[:5]:
             print(f"    L{e['layer']}-H{e['head']} ({e['consistent_frac']*100:.0f}% collapse)")
 
